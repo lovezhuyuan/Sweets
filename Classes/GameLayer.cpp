@@ -46,7 +46,8 @@ void GameLayer::onEnterTransitionDidFinish(){
             for(auto mapSecond :temp.second){
                 auto sp = mapSecond.second;
                 if(sp->getBoundingBox().containsPoint(location)){
-                    this->alteredState(sp);
+                    if(!sp->getName().compare("ttq")||!sp->getName().compare("ice"))
+                        this->alteredState(sp);
                     break;
                 }
             }
@@ -104,7 +105,7 @@ void GameLayer::readJson(std::string path,int id){
          m_intOneNum = object["1"].GetInt();
     }
     if(object.HasMember("2")){
-         m_intTwoNum = object["3"].GetInt();
+         m_intTwoNum = object["2"].GetInt();
     }
     if(object.HasMember("3")){
         m_intThreeNum = object["3"].GetInt();
@@ -116,8 +117,12 @@ void GameLayer::readJson(std::string path,int id){
         m_intIceNum = object["5"].GetInt();
     }
     if(object.HasMember("6")){ //小恶魔
-        m_intIceNum = object["6"].GetInt();
+        m_intDevilNum = object["6"].GetInt();
     }
+    if(object.HasMember("7")){ //巧克力
+        m_intChocolatesNum = object["7"].GetInt();
+    }
+    CCLOG("%d",m_intOneNum+ m_intTwoNum+ m_intThreeNum+m_intFourNum+m_intIceNum+m_intDevilNum+m_intChocolatesNum);
 }
 int* GameLayer::getEmptyIndex(int* index){
     int index1 = CCRANDOM_0_1()*9;
@@ -152,21 +157,35 @@ int* GameLayer::getEmptyIndex(int* index){
     index[1] = index2;
     return index;
 }
-cocos2d::Sprite* GameLayer::addObject(int textureIndex,int* positonIndex,std::string name){
+cocos2d::Sprite* GameLayer::addObject(int textureIndex,int tag,int* positonIndex,std::string name){
     int index1 = positonIndex[0];
     int index2 = positonIndex[1];
     auto sp = Sprite::createWithTexture(this->m_texture_dikuai.at(textureIndex));
     this->addChild(sp);
     sp->setPosition(Vec2(this->m_visibleOrigin.x+index2*80+sp->getBoundingBox().size.width*0.5,this->m_visibleOrigin.y+index1*80+240+sp->getBoundingBox().size.height*0.5));
     auto label = Label::createWithTTF(StringUtils::format("%d",textureIndex),"fonts/Marker Felt.ttf",24);
+    if(!name.compare("ttq")){
+        label->setString(StringUtils::format("%d",tag));
+        label->setColor(Color3B(255, 0, 0));
+    }else if (!name.compare("ice")){
+        label->setString(StringUtils::format("ice"));
+        label->setColor(Color3B(255, 0, 255));
+    }else if(!name.compare("devil")){
+        label->setColor(Color3B(0, 0, 0));
+        label->setString(StringUtils::format("devil"));
+    }else if(!name.compare("clt")){
+        label->setColor(Color3B(0, 0, 0));
+        label->setString(StringUtils::format("clt"));
+    }
     sp->addChild(label);
-    label->setColor(Color3B(255, 0, 0));
+    
     label->setPosition(this->m_visibleOrigin.x+sp->getBoundingBox().size.width*0.5,this->m_visibleOrigin.y+sp->getBoundingBox().size.height*0.5);
     label->setName("label");
     int*  userData = new int[2];
     userData[0]=index1;
     userData[1]=index2;
     sp->setUserData(userData);//注意这个 内存的释放
+    sp->setTag(tag);
     sp->setName(name);
     if(m_mapSprite.find(index1)==m_mapSprite.end()){//map中不存在这个对象
         cocos2d::Map<int,Sprite*> tempSprite;
@@ -182,41 +201,46 @@ void GameLayer::initData(){
     for(int i= 0; i<m_intOneNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(0, positionIndex,"ttq");
+        this->addObject(0,0, positionIndex,"ttq");
         delete [] positionIndex;
     }
     for(int i = 0; i<m_intTwoNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(1, positionIndex,"ttq");
+        this->addObject(1,1, positionIndex,"ttq");
         delete [] positionIndex;
     }
     for(int i =0; i<m_intThreeNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(2, positionIndex,"ttq");
+        this->addObject(2,2, positionIndex,"ttq");
         delete [] positionIndex;
     }
     for(int i =0; i<m_intFourNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(3, positionIndex,"ttq");
+        this->addObject(3,3, positionIndex,"ttq");
         delete [] positionIndex;
     }
     for(int i =0; i<m_intIceNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(-1, positionIndex,"ice");
+        this->addObject(0,-1, positionIndex,"ice");
         delete [] positionIndex;
     }
-    for(int i =0; i<m_intIceNum;i++){
+    for(int i =0; i<m_intDevilNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(-1, positionIndex,"devil");
+        this->addObject(0,9, positionIndex,"devil");
         delete [] positionIndex;
     }
-    
-    
+    for(int i =0;i<m_intChocolatesNum;i++){
+        int* positionIndex = new int[2];
+        positionIndex = getEmptyIndex(positionIndex);
+        this->addObject(0,-1, positionIndex,"clt");
+        delete [] positionIndex;
+    }
+
 }
 void GameLayer::slowUpdate(float dt){
     Vector<Sprite*>::iterator itrMoveSp = this->m_vector_moveSp.begin();
@@ -230,7 +254,16 @@ void GameLayer::slowUpdate(float dt){
                 if((*itrMoveSp)->getBoundingBox().intersectsRect(sp->getBoundingBox())){
                     (*itrMoveSp)->removeFromParent();
                     this->m_vector_moveSp.eraseObject(*itrMoveSp);
-                    this->alteredState(sp);
+                    if(!sp->getName().compare("devil")){
+                        sp->setTag(sp->getTag()+1);
+                        if(sp->getTag()>=10){
+                            (*(this->m_mapSprite.find(((int*)sp->getUserData())[0]))).second.erase(((int*)sp->getUserData())[1]);//删除sp
+                            delete[] (int*)sp->getUserData();
+                            sp->removeFromParent();
+                        }
+                    }else{
+                        this->alteredState(sp);
+                    }
                     --itrMoveSp;
                     needBreak = true;
                     break;
@@ -323,9 +356,7 @@ void GameLayer::alteredState(Sprite* sp){
                     this->m_vector_moveSp.eraseObject(spMove);
                 }),RemoveSelf::create(),NULL));  //延时0.2 秒移除
             }
-            auto intTemp = (int*)sp->getUserData();
-            delete intTemp;
-            intTemp = nullptr;
+            delete (int*)sp->getUserData();
             sp->removeFromParent();
             sp=nullptr;
         }else{  //tag 值小于 4  tag + 1
