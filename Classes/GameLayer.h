@@ -18,7 +18,12 @@ private:
     int m_intTwoNum{0};
     int m_intThreeNum{0};
     int m_intFourNum{0};
+    int m_intIceNum{0};
+    int m_intDevilNum{0};
 private:
+    void readJson(std::string path,int id);
+    int* getEmptyIndex(int *index); //返回空位
+    cocos2d::Sprite* addObject(int textureIndex,int* positonIndex,std::string name);
     void initData();//初始化游戏数据
     void slowUpdate(float dt);
     void alteredState(cocos2d::Sprite* sp);

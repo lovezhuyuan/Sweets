@@ -1,5 +1,6 @@
 #include "GameLayer.h"
 #include "AppDelegate.h"
+#include "json/document.h"
 USING_NS_CC;
 
 bool GameLayer::init()
@@ -54,7 +55,6 @@ void GameLayer::onEnterTransitionDidFinish(){
     };
     Director::getInstance()->getEventDispatcher()->addEventListenerWithFixedPriority(this->m_listen,1);//ui图层 优先级低
     std::string path[]={
-        "ttq/ttq_0.png",
         "ttq/ttq_1.png",
         "ttq/ttq_2.png",
         "ttq/ttq_3.png",
@@ -78,91 +78,145 @@ void GameLayer::onEnterTransitionDidFinish(){
     }
 }
 void GameLayer::initUI(){
-    this->m_texture_dikuai.pushBack(Director::getInstance()->getTextureCache()->getTextureForKey("ttq/ttq_0.png"));
     this->m_texture_dikuai.pushBack(Director::getInstance()->getTextureCache()->getTextureForKey("ttq/ttq_1.png"));
     this->m_texture_dikuai.pushBack(Director::getInstance()->getTextureCache()->getTextureForKey("ttq/ttq_2.png"));
     this->m_texture_dikuai.pushBack(Director::getInstance()->getTextureCache()->getTextureForKey("ttq/ttq_3.png"));
     this->m_texture_dikuai.pushBack(Director::getInstance()->getTextureCache()->getTextureForKey("ttq/ttq_4.png"));
-    
     auto bg = Sprite::createWithTexture(Director::getInstance()->getTextureCache()->getTextureForKey("Map/DDLFT_ditu.png"));
     this->addChild(bg);
     bg->setPosition(Vec2(this->m_visibleOrigin.x+this->m_visibleSize.width*0.5,this->m_visibleOrigin.y+360.0f+80.0f*3.0f));
+    this->readJson("configure/configure.json",1);
     this->initData();
-   
 }
-void GameLayer::initData(){
-     int * a = new int(5);
+void GameLayer::readJson(std::string path,int id){
+    rapidjson::Document readdoc;
+    std::string load_str = FileUtils::getInstance()->getStringFromFile(path);
+    readdoc.Parse<0>(load_str.c_str());
+    //assert(readdoc.HasMember(StringUtils::format("%d",id).c_str()));
+    rapidjson::Value object = readdoc[StringUtils::format("%d",id).c_str()].GetObject();
+    //数据先置为0
     m_intOneNum = 0;
     m_intTwoNum = 0;
     m_intThreeNum = 0;
-    m_intFourNum = 81;
-    //初始化地图 精灵
-    int tempTotal =m_intOneNum+m_intTwoNum+m_intThreeNum+m_intFourNum;
-    for(int i = 0;i<tempTotal;i++){
-        int index1 = 1;//CCRANDOM_0_1()*9;
-        int index2 = 1;// CCRANDOM_0_1()*9;
-        if(this->m_mapSprite.find(index1)!=this->m_mapSprite.end()&&(*this->m_mapSprite.find(index1)).second.find(index2)!=(*this->m_mapSprite.find(index1)).second.end()){//随机出的位置有东西
-            int count = 0;
-            while(true){
-                //向上
-                int tempIndex1=index1;
-                int tempIndex2=index2+count;
-                tempIndex2 = count % 9;
-                tempIndex1+=(count/9);
-                if(tempIndex1<9&&(this->m_mapSprite.find(tempIndex1)==this->m_mapSprite.end()||(*this->m_mapSprite.find(tempIndex1)).second.find(tempIndex2)==(*this->m_mapSprite.find(tempIndex1)).second.end())){
-                    index1 = tempIndex1;
-                    index2 = tempIndex2;
-                    break;
-                }
-                //向下
-                tempIndex1=index1;
-                tempIndex2=index2-count;
-                tempIndex2 = count % 9;
-                tempIndex1 = (count/9);
-                if(tempIndex1>=0&&(this->m_mapSprite.find(tempIndex1)==this->m_mapSprite.end()||(*this->m_mapSprite.find(tempIndex1)).second.find(tempIndex2)==(*this->m_mapSprite.find(tempIndex1)).second.end())){
-                    index1 = tempIndex1;
-                    index2 = tempIndex2;
-                    break;
-                }
-                count++;
-            }
-        }
-        int sub = 0;
-        if(m_intOneNum>0){
-            m_intOneNum--;
-            sub = 0;
-        }else if(m_intTwoNum>0){
-            m_intTwoNum--;
-            sub = 1;
-        }else if(m_intThreeNum>0){
-            m_intThreeNum--;
-            sub=2;
-        }else if(m_intFourNum>0){
-            m_intFourNum--;
-            sub=3;
-        }
-        auto sp = Sprite::createWithTexture(this->m_texture_dikuai.at(sub));
-        this->addChild(sp);
-        sp->setPosition(Vec2(this->m_visibleOrigin.x+index2*80+sp->getBoundingBox().size.width*0.5,this->m_visibleOrigin.y+index1*80+240+sp->getBoundingBox().size.height*0.5));
-        sp->setTag(sub);
-        auto label = Label::createWithTTF(StringUtils::format("%d",sub),"fonts/Marker Felt.ttf",24);
-        sp->addChild(label);
-        label->setColor(Color3B(255, 0, 0));
-        label->setPosition(this->m_visibleOrigin.x+sp->getBoundingBox().size.width*0.5,this->m_visibleOrigin.y+sp->getBoundingBox().size.height*0.5);
-        label->setName("label");
-        int*  userData = new int[2];
-        userData[0]=index1;
-        userData[1]=index2;
-        sp->setUserData(userData);//注意这个 内存的释放
-        if(m_mapSprite.find(index1)==m_mapSprite.end()){//map中不存在这个对象
-            cocos2d::Map<int,Sprite*> tempSprite;
-            tempSprite.insert(index2,sp);
-            m_mapSprite.insert(std::map<int,cocos2d::Map<int,Sprite*>>::value_type(index1,tempSprite));
-        }else{   //map中存在这个对象
-            (*m_mapSprite.find(index1)).second.insert(index2,sp);
-        }
-       
+    m_intFourNum = 0;
+    //赋值
+    if(object.HasMember("1")){
+         m_intOneNum = object["1"].GetInt();
     }
+    if(object.HasMember("2")){
+         m_intTwoNum = object["3"].GetInt();
+    }
+    if(object.HasMember("3")){
+        m_intThreeNum = object["3"].GetInt();
+    }
+    if(object.HasMember("4")){
+        m_intFourNum = object["4"].GetInt();
+    }
+    if(object.HasMember("5")){ //冰块
+        m_intIceNum = object["5"].GetInt();
+    }
+    if(object.HasMember("6")){ //小恶魔
+        m_intIceNum = object["6"].GetInt();
+    }
+}
+int* GameLayer::getEmptyIndex(int* index){
+    int index1 = CCRANDOM_0_1()*9;
+    int index2 = CCRANDOM_0_1()*9;
+    if(this->m_mapSprite.find(index1)!=this->m_mapSprite.end()&&(*this->m_mapSprite.find(index1)).second.find(index2)!=(*this->m_mapSprite.find(index1)).second.end()){//随机出的位置有东西
+        int count = 0;
+        while(true){
+            //向上
+            int tempIndex1=index1;
+            int tempIndex2=index2+count;
+            tempIndex2 = count % 9;
+            tempIndex1+=(count/9);
+            if(tempIndex1<9&&(this->m_mapSprite.find(tempIndex1)==this->m_mapSprite.end()||(*this->m_mapSprite.find(tempIndex1)).second.find(tempIndex2)==(*this->m_mapSprite.find(tempIndex1)).second.end())){
+                index1 = tempIndex1;
+                index2 = tempIndex2;
+                break;
+            }
+            //向下
+            tempIndex1=index1;
+            tempIndex2=index2-count;
+            tempIndex2 = count % 9;
+            tempIndex1 = (count/9);
+            if(tempIndex1>=0&&(this->m_mapSprite.find(tempIndex1)==this->m_mapSprite.end()||(*this->m_mapSprite.find(tempIndex1)).second.find(tempIndex2)==(*this->m_mapSprite.find(tempIndex1)).second.end())){
+                index1 = tempIndex1;
+                index2 = tempIndex2;
+                break;
+            }
+            count++;
+        }
+    }
+    index[0] = index1;
+    index[1] = index2;
+    return index;
+}
+cocos2d::Sprite* GameLayer::addObject(int textureIndex,int* positonIndex,std::string name){
+    int index1 = positonIndex[0];
+    int index2 = positonIndex[1];
+    auto sp = Sprite::createWithTexture(this->m_texture_dikuai.at(textureIndex));
+    this->addChild(sp);
+    sp->setPosition(Vec2(this->m_visibleOrigin.x+index2*80+sp->getBoundingBox().size.width*0.5,this->m_visibleOrigin.y+index1*80+240+sp->getBoundingBox().size.height*0.5));
+    auto label = Label::createWithTTF(StringUtils::format("%d",textureIndex),"fonts/Marker Felt.ttf",24);
+    sp->addChild(label);
+    label->setColor(Color3B(255, 0, 0));
+    label->setPosition(this->m_visibleOrigin.x+sp->getBoundingBox().size.width*0.5,this->m_visibleOrigin.y+sp->getBoundingBox().size.height*0.5);
+    label->setName("label");
+    int*  userData = new int[2];
+    userData[0]=index1;
+    userData[1]=index2;
+    sp->setUserData(userData);//注意这个 内存的释放
+    sp->setName(name);
+    if(m_mapSprite.find(index1)==m_mapSprite.end()){//map中不存在这个对象
+        cocos2d::Map<int,Sprite*> tempSprite;
+        tempSprite.insert(index2,sp);
+        m_mapSprite.insert(std::map<int,cocos2d::Map<int,Sprite*>>::value_type(index1,tempSprite));
+    }else{   //map中存在这个对象
+        (*m_mapSprite.find(index1)).second.insert(index2,sp);
+    }
+    return sp;
+}
+void GameLayer::initData(){
+    //初始化地图 精灵
+    for(int i= 0; i<m_intOneNum;i++){
+        int* positionIndex = new int[2];
+        positionIndex = getEmptyIndex(positionIndex);
+        this->addObject(0, positionIndex,"ttq");
+        delete [] positionIndex;
+    }
+    for(int i = 0; i<m_intTwoNum;i++){
+        int* positionIndex = new int[2];
+        positionIndex = getEmptyIndex(positionIndex);
+        this->addObject(1, positionIndex,"ttq");
+        delete [] positionIndex;
+    }
+    for(int i =0; i<m_intThreeNum;i++){
+        int* positionIndex = new int[2];
+        positionIndex = getEmptyIndex(positionIndex);
+        this->addObject(2, positionIndex,"ttq");
+        delete [] positionIndex;
+    }
+    for(int i =0; i<m_intFourNum;i++){
+        int* positionIndex = new int[2];
+        positionIndex = getEmptyIndex(positionIndex);
+        this->addObject(3, positionIndex,"ttq");
+        delete [] positionIndex;
+    }
+    for(int i =0; i<m_intIceNum;i++){
+        int* positionIndex = new int[2];
+        positionIndex = getEmptyIndex(positionIndex);
+        this->addObject(-1, positionIndex,"ice");
+        delete [] positionIndex;
+    }
+    for(int i =0; i<m_intIceNum;i++){
+        int* positionIndex = new int[2];
+        positionIndex = getEmptyIndex(positionIndex);
+        this->addObject(-1, positionIndex,"devil");
+        delete [] positionIndex;
+    }
+    
+    
 }
 void GameLayer::slowUpdate(float dt){
     Vector<Sprite*>::iterator itrMoveSp = this->m_vector_moveSp.begin();
@@ -199,13 +253,6 @@ void GameLayer::GameRestart(Ref* ref){
         this->m_vector_moveSp.eraseObject(*itr);
         itr--;
     }
-    
-//    std::map<int,std::map<int,Sprite*>>::iterator itr2=this->m_mapSprite.begin();
-//    for(;itr2!=this->m_mapSprite.end();itr2++){
-//        (*(*itr2).second.begin()).second->removeFromParent();
-//        this->m_mapSprite.erase(itr2);
-//        itr2--;
-//    }
     this->initData();
 }
 void GameLayer::GameOver(bool vector){
@@ -293,6 +340,14 @@ void GameLayer::onExitTransitionDidStart(){
 void GameLayer::onExit(){
     Layer::onExit();
     Director::getInstance()->getEventDispatcher()->removeEventListener(this->m_listen);//销毁 监听事件
+    for(auto temp : this->m_mapSprite){
+        for(auto mapSecond :temp.second){
+            auto sp = mapSecond.second;
+            auto tempData = (int*)sp->getUserData();
+            CC_SAFE_DELETE_ARRAY(tempData);
+        }
+    }
+
 }
 void GameLayer::cleanup(){
     Layer::cleanup();
