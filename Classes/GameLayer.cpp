@@ -54,7 +54,7 @@ void GameLayer::onEnterTransitionDidFinish(){
         }
         return false;
     };
-    Director::getInstance()->getEventDispatcher()->addEventListenerWithFixedPriority(this->m_listen,1);//ui图层 优先级低
+    Director::getInstance()->getEventDispatcher()->addEventListenerWithFixedPriority(this->m_listen,1);//比 ui图层 优先级低
     std::string path[]={
         "ttq/ttq_1.png",
         "ttq/ttq_2.png",
@@ -62,14 +62,11 @@ void GameLayer::onEnterTransitionDidFinish(){
         "ttq/ttq_4.png",
         "Map/DDLFT_ditu.png"
     };
+     //加载图片缓存
     int * index = new int(sizeof(path)/sizeof(path[0]));
     for(int i =0;i<sizeof(path)/sizeof(path[0]);i++){
         Director::getInstance()->getTextureCache()->addImageAsync(path[i],[=](Texture2D* texture)mutable{
             --(*index);
-            if(texture==nullptr){
-                CCLOG("111");
-                return;
-            }
             if((*index)==0){
                 delete index;
                 index = nullptr;
@@ -157,12 +154,15 @@ int* GameLayer::getEmptyIndex(int* index){
     index[1] = index2;
     return index;
 }
-cocos2d::Sprite* GameLayer::addObject(int textureIndex,int tag,int* positonIndex,std::string name){
+cocos2d::Sprite* GameLayer::addElement(const int textureIndex,const int tag,const int* positonIndex,const std::string name){
     int index1 = positonIndex[0];
     int index2 = positonIndex[1];
+    if(index1>8||index2>8){
+        return nullptr;
+    }
     auto sp = Sprite::createWithTexture(this->m_texture_dikuai.at(textureIndex));
     this->addChild(sp);
-    sp->setPosition(Vec2(this->m_visibleOrigin.x+index2*80+sp->getBoundingBox().size.width*0.5,this->m_visibleOrigin.y+index1*80+240+sp->getBoundingBox().size.height*0.5));
+    sp->setPosition(Vec2(this->m_visibleOrigin.x+index1*80+sp->getBoundingBox().size.width*0.5,this->m_visibleOrigin.y+index2*80+240+sp->getBoundingBox().size.height*0.5));
     auto label = Label::createWithTTF(StringUtils::format("%d",textureIndex),"fonts/Marker Felt.ttf",24);
     if(!name.compare("ttq")){
         label->setString(StringUtils::format("%d",tag));
@@ -201,46 +201,89 @@ void GameLayer::initData(){
     for(int i= 0; i<m_intOneNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(0,0, positionIndex,"ttq");
+        this->addElement(0,0, positionIndex,"ttq");
         delete [] positionIndex;
     }
     for(int i = 0; i<m_intTwoNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(1,1, positionIndex,"ttq");
+        this->addElement(1,1, positionIndex,"ttq");
         delete [] positionIndex;
     }
     for(int i =0; i<m_intThreeNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(2,2, positionIndex,"ttq");
+        this->addElement(2,2, positionIndex,"ttq");
         delete [] positionIndex;
     }
     for(int i =0; i<m_intFourNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(3,3, positionIndex,"ttq");
+        this->addElement(3,3, positionIndex,"ttq");
         delete [] positionIndex;
     }
     for(int i =0; i<m_intIceNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(0,-1, positionIndex,"ice");
+        this->addElement(0,-1, positionIndex,"ice");
         delete [] positionIndex;
     }
     for(int i =0; i<m_intDevilNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(0,9, positionIndex,"devil");
+        this->addElement(0,9, positionIndex,"devil");
         delete [] positionIndex;
     }
     for(int i =0;i<m_intChocolatesNum;i++){
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addObject(0,-1, positionIndex,"clt");
+        this->addElement(0,4, positionIndex,"clt");
         delete [] positionIndex;
     }
 
+}
+cocos2d::Sprite* GameLayer::getChild(const int index1,const int index2){
+    auto itr1 =this->m_mapSprite.find(index1);
+    if(itr1!=this->m_mapSprite.end()){
+        auto itr2 = (*itr1).second.find(index2);
+        if(itr2 != (*itr1).second.end()){
+            return (*itr2).second;
+        }
+    }
+    return nullptr;
+}
+void GameLayer::deleteChild(const int index1,const int index2){
+    auto sp = this->getChild(index1, index2);
+    if(sp!=nullptr){
+        this->deleteChild(sp);
+    }
+}
+void GameLayer::deleteChild(cocos2d::Sprite* sp){
+    if(sp==nullptr){
+        return;
+    }
+    (*(this->m_mapSprite.find(((int*)sp->getUserData())[0]))).second.erase(((int*)sp->getUserData())[1]);//删除sp
+    delete[] (int*)sp->getUserData();
+    sp->removeFromParent();
+}
+void GameLayer::chocolateCollision(const int index1,const int index2){
+    auto sp = this->getChild(index1,index2);
+    if(sp!=nullptr){
+        if(sp->getName().compare("ttq")){//巧克力遇到甜甜圈
+            this->addElement(0, sp->getTag(),(int*)sp->getUserData(),"clt");
+            deleteChild(sp);
+        }else if(!sp->getName().compare("devil"))//遇到小恶魔
+        {
+            
+        }else if(!sp->getName().compare("ice")){//遇到冰块
+            
+        }
+    }else{
+        int temp [2];
+        temp[0] = index1;
+        temp[1]= index2;
+       this->addElement(0, 0,temp,"clt");
+    }
 }
 void GameLayer::slowUpdate(float dt){
     Vector<Sprite*>::iterator itrMoveSp = this->m_vector_moveSp.begin();
@@ -252,18 +295,23 @@ void GameLayer::slowUpdate(float dt){
                 auto aa =sp->getBoundingBox();
                 auto bb =(*itrMoveSp)->getBoundingBox();
                 if((*itrMoveSp)->getBoundingBox().intersectsRect(sp->getBoundingBox())){
-                    (*itrMoveSp)->removeFromParent();
-                    this->m_vector_moveSp.eraseObject(*itrMoveSp);
-                    if(!sp->getName().compare("devil")){
+                    if(!sp->getName().compare("devil")){  //小糖块遇到 小恶魔
                         sp->setTag(sp->getTag()+1);
                         if(sp->getTag()>=10){
-                            (*(this->m_mapSprite.find(((int*)sp->getUserData())[0]))).second.erase(((int*)sp->getUserData())[1]);//删除sp
-                            delete[] (int*)sp->getUserData();
-                            sp->removeFromParent();
+                            this->deleteChild(sp);
                         }
-                    }else{
-                        this->alteredState(sp);
+                    }else if(!sp->getName().compare("clt")){ // 遇到的是巧克力
+                        this->alteredClt(sp);
                     }
+                    else{
+                        if(!(*itrMoveSp)->getName().compare("clt")){
+                            this->alteredClt(sp);
+                        }else{
+                            this->alteredState(sp);
+                        }
+                    }
+                    (*itrMoveSp)->removeFromParent();
+                    this->m_vector_moveSp.eraseObject(*itrMoveSp);
                     --itrMoveSp;
                     needBreak = true;
                     break;
@@ -313,6 +361,49 @@ void GameLayer::GameOver(bool vector){
     }
    
 }
+void GameLayer::alteredClt(cocos2d::Sprite* sp){
+    int tag = sp->getTag();
+    tag++;
+    if(tag>=5){
+        (*(this->m_mapSprite.find(((int*)sp->getUserData())[0]))).second.erase(((int*)sp->getUserData())[1]);//删除sp
+        for(int i = 0; i<4;i++){  //向4个反向 发射 4个sp
+            int index1 = (((int*)sp->getUserData())[0]);
+            int index2 = (((int*)sp->getUserData())[1]);
+            auto spMove = Sprite::createWithTexture(this->m_texture_dikuai.at(0));
+            spMove->setTag(1);
+            this->addChild(spMove);
+            spMove->setPosition(sp->getPosition());
+            spMove->setScale(1/4.0f);
+            Vec2 postion;
+            if(i==0){//向上飞
+                postion = Vec2(spMove->getPositionX(),1.0f*80.0f+this->m_visibleOrigin.y+sp->getPositionY());
+                index2+=1;
+            }else if(i==1){  //向下飞
+                postion = Vec2(spMove->getPositionX(),-1.0f*80.0f+this->m_visibleOrigin.y+sp->getPositionY());
+                index2-=1;
+            }else if(i==2){  //向左飞
+                postion = Vec2(-80.0f+sp->getPositionX()+this->m_visibleOrigin.x+spMove->getPositionX(),spMove->getPositionY());
+                index1-=1;
+            }else{//向右飞
+                postion = Vec2(1.0f*80.0f+sp->getPositionX()+this->m_visibleOrigin.x,spMove->getPositionY());
+                index1+=1;
+            }
+            this->m_vector_moveSp.pushBack(spMove);
+            spMove->runAction(Sequence::create(MoveTo::create(0.5,postion),DelayTime::create(0.2f),CallFunc::create([=](){
+                chocolateCollision(index1,index2);
+                this->m_vector_moveSp.eraseObject(spMove);
+            }),RemoveSelf::create(),NULL));  //延时0.2 秒移除
+        }
+        delete (int*)sp->getUserData();
+        sp->removeFromParent();
+        sp=nullptr;
+    }
+    else{  //tag 值小于 4  tag + 1
+//        static_cast<Label*>(sp->getChildByName("label"))->setString(StringUtils::format("%d",tag));
+          sp->setTag(tag);
+//        sp->setTexture(this->m_texture_dikuai.at(tag));
+    }
+}
 void GameLayer::alteredState(Sprite* sp){
         int tag = sp->getTag();
         tag++;
@@ -352,7 +443,7 @@ void GameLayer::alteredState(Sprite* sp){
                     postion = Vec2(10.0f*80.0f+this->m_visibleOrigin.x,spMove->getPositionY());
                 }
                 this->m_vector_moveSp.pushBack(spMove);
-                spMove->runAction(Sequence::create(MoveTo::create(duration,postion),DelayTime::create(0.2f),CallFunc::create([=](){
+                spMove->runAction(Sequence::create(MoveTo::create(duration*0.5,postion),DelayTime::create(0.2f),CallFunc::create([=](){
                     this->m_vector_moveSp.eraseObject(spMove);
                 }),RemoveSelf::create(),NULL));  //延时0.2 秒移除
             }

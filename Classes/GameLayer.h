@@ -22,13 +22,18 @@ private:
     int m_intDevilNum{0};
     int m_intChocolatesNum{0};
 private:
-    void readJson(std::string path,int id);
+    cocos2d::Sprite* getChild(const int index1,const int index2);//移除sp
+    void deleteChild(const int index1,const int index2);//移除sp
+    void deleteChild(cocos2d::Sprite* sp);
+    void readJson(const std::string path,const int id);
     int* getEmptyIndex(int *index); //返回空位
-    cocos2d::Sprite* addObject(int textureIndex,int tag,int* positonIndex,std::string name);
+    cocos2d::Sprite* addElement(const int textureIndex,const int tag,const int* positonIndex,const std::string name);
+    void chocolateCollision(const int index1,const int index2);
     void initData();//初始化游戏数据
     void slowUpdate(float dt);
     void alteredState(cocos2d::Sprite* sp);
-    void GameOver(bool vector);//游戏结束
+    void alteredClt(cocos2d::Sprite* sp);
+    void GameOver(const bool vector);//游戏结束
     void GameRestart(Ref* ref);
     virtual bool init();
     void menuCloseCallback(cocos2d::Ref* pSender);
