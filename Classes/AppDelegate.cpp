@@ -73,7 +73,7 @@ bool AppDelegate::applicationDidFinishLaunching() {
     glview->setDesignResolutionSize(designResolutionSize.width, designResolutionSize.height, ResolutionPolicy::NO_BORDER);
     
     register_all_packages();
-
+    FileUtils::getInstance()->addSearchPath("Animation/texture");
     // create a scene. it's an autorelease object
     srand((unsigned)time(NULL)); //初始化随机数种子
     auto scene = Scene::create();
