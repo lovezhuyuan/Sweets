@@ -1,7 +1,7 @@
 #include "GameLayer.h"
 #include "AppDelegate.h"
 #include "json/document.h"
-#include "cocostudio/CocoStudio.h"
+#include "Sprite_New.h"
 USING_NS_CC;
 
 bool GameLayer::init()
@@ -40,11 +40,10 @@ void GameLayer::onEnterTransitionDidFinish(){
    // AnimationCache::getInstance()->addAnimation(<#cocos2d::Animation *animation#>, <#const std::string &name#>)
     
     
-    this->schedule(schedule_selector(GameLayer::slowUpdate), 0.05, CC_REPEAT_FOREVER, 0);
     //点击精灵 事件监听
     m_listen = EventListenerTouchOneByOne::create();
     m_listen->onTouchBegan = [=](Touch * touch,Event* event)mutable{
-        if(this->m_vector_moveSp.size()>0 || canTouch==false){
+        if(this->m_vector_moveSp.size()>0 ||(m_layer_gameOver&& m_layer_gameOver->isVisible())){
             return false;
         }
         bool needBreak = false;
@@ -54,9 +53,40 @@ void GameLayer::onEnterTransitionDidFinish(){
                 for(int j = 0;j<9;j++){
                     if(this->m_ArrayRect[i][j].containsPoint(location)){
                         auto sp = this->getChild(i, j);
+                        if(m_usePropType==fire){ //使用火把
+                            auto node = CSLoader::createNode("Animation/SKT-XHB-dianran/Layer.csb");
+                            node->setIgnoreAnchorPointForPosition(false);
+                            node->setAnchorPoint(Vec2(0.5,0.5));
+                            this->addChild(node);
+                            node->setPosition(Vec2(m_ArrayRect[i][j].origin.x+40,m_ArrayRect[i][j].origin.y+40));
+                            auto timeline = CSLoader::createTimeline("Animation/SKT-XHB-dianran/Layer.csb");
+                            node->runAction(timeline);
+                            timeline->play("animation1",false);
+                            timeline->setAnimationEndCallFunc("animation1",[=](){
+                                node->removeFromParent();
+                            });
+                            if(sp==nullptr){
+                                return false;
+                            }
+                            if(!sp->getName().compare("ttq")){
+                                this->deleteChild(sp);
+                            }else if(!sp->getName().compare("ice")){
+                                auto tag = sp->getTag();
+                                tag-= 100;
+                                if(tag<100)//少于一层了
+                                {
+                                   this->deleteChild(sp);
+                                }else{
+                                   sp->setTag(tag);
+                                    sp->setTexture(Director::getInstance()->getTextureCache()->getTextureForKey(m_icepath[tag/100 - 1]));
+                                }
+                            }else if(!sp->getName().compare("clt")){//点到巧克力
+                                this->deleteChild(sp);
+                            }
+                        }
                         if(sp==nullptr){//点在空格上
+                            this->m_intEliminateNum=0;
                             if(m_usePropType==bomb){
-                                this->m_intEliminateNum=0;
                                 std::function<void(Sprite* sptemp)> func =[=](Sprite* sptemp){
                                     //爆炸特效
                                     auto bomb = Sprite::create();
@@ -91,7 +121,26 @@ void GameLayer::onEnterTransitionDidFinish(){
                                 spTemp = this->getChild(i+1,j-1);//
                                 func(spTemp);
                             }
+                            if(m_usePropType==jelly){
+                                int * positionIndex=new int[2];
+                                positionIndex[0]=i;
+                                positionIndex[1]=j;
+                                Director::getInstance()->getTextureCache()->addImage("ttq/GD.png");
+                                this->addElement("ttq/GD.png", 0, positionIndex, "gd");
+                                delete [] positionIndex;
+                            }
+                            if(m_usePropType==magicmirror){
+                                int * positionIndex=new int[2];
+                                positionIndex[0]=i;
+                                positionIndex[1]=j;
+                                Director::getInstance()->getTextureCache()->addImage("Animation/Magicmirror/hahajing0.png");
+                                this->addElement("Animation/Magicmirror/hahajing0.png", 0, positionIndex, "magicmirror");
+                                delete [] positionIndex;
+                            }if(m_usePropType==fire){
+                                
+                            }
                         }
+                        
                         return false;
                     }
                 }
@@ -161,10 +210,6 @@ void GameLayer::onEnterTransitionDidFinish(){
     m_uipath.push_back("Animation/SKT-BINGKUAI/SKT-BING-bingtangtexiao.png");
     m_uipath.push_back("Animation/SKT-BINGKUAI/SKT-BING-texiao2.png");
     
-    std::vector<std::string> boombPath;
-    for(int i =1;i<27;i++){
-        boombPath.push_back(StringUtils::format("Animation/bomb/SKT-boomTEXIAO%d.png",i));
-    }
      //加载图片缓存
     std::vector<std::vector<std::string>> path;
     path.push_back(m_ttqpath);
@@ -172,8 +217,6 @@ void GameLayer::onEnterTransitionDidFinish(){
     path.push_back(m_cltMove);
     path.push_back(m_cltPath);
     path.push_back(m_uipath);
-    path.push_back(boombPath);
-
     int * index = new int(0);
     auto itr = path.begin();
     for(;itr!=path.end();itr++){
@@ -192,6 +235,7 @@ void GameLayer::onEnterTransitionDidFinish(){
             });
         }
     }
+    //初始化的格子
     for(int i =0;i<9;i++){
         for(int j = 0;j<9;j++){
             m_ArrayRect[i][j]=Rect(this->m_visibleOrigin.x+i*80,this->m_visibleOrigin.y+j*80+240,80,80);
@@ -206,13 +250,22 @@ void GameLayer::initUI(){
     this->addChild(m_labelClickNum);
     m_labelClickNum->setPosition(Vec2(m_visibleSize.width*0.5+m_visibleOrigin.x,m_visibleSize.height*0.9+m_visibleOrigin.y));
     
-    auto btn_Bomb = MenuItemFont::create("bomb", CC_CALLBACK_1(GameLayer::btnCallBack,this,"bomb"));
-    btn_Bomb->setPosition(Vec2(m_visibleOrigin.x+m_visibleSize.width*0.2,m_visibleSize.height*0.1+m_visibleOrigin.y));
+    btn_Bomb = MenuItemFont::create("bomb", CC_CALLBACK_1(GameLayer::btnCallBack,this,"bomb"));
+    btn_Bomb->setPosition(Vec2(m_visibleOrigin.x+m_visibleSize.width*0.1,m_visibleSize.height*0.1+m_visibleOrigin.y));
     
-    auto sweetMagic = MenuItemFont::create("SweetMagic", CC_CALLBACK_1(GameLayer::btnCallBack,this,"sweetMagic"));
-    sweetMagic->setPosition(Vec2(m_visibleOrigin.x+m_visibleSize.width*0.5,m_visibleSize.height*0.1+m_visibleOrigin.y));
+    btn_SweetMagic = MenuItemFont::create("SweetMagic", CC_CALLBACK_1(GameLayer::btnCallBack,this,"sweetMagic"));
+    btn_SweetMagic->setPosition(Vec2(m_visibleOrigin.x+m_visibleSize.width*0.3,m_visibleSize.height*0.1+m_visibleOrigin.y));
     
-    auto menu = Menu::create(btn_Bomb,sweetMagic,nullptr);
+    btn_jelly = MenuItemFont::create("Jelly", CC_CALLBACK_1(GameLayer::btnCallBack,this,"Jelly"));
+    btn_jelly->setPosition(Vec2(m_visibleOrigin.x+m_visibleSize.width*0.5,m_visibleSize.height*0.1+m_visibleOrigin.y));
+    
+    btn_magicmirror = MenuItemFont::create("magicmirror", CC_CALLBACK_1(GameLayer::btnCallBack,this,"magicmirror"));
+    btn_magicmirror->setPosition(Vec2(m_visibleOrigin.x+m_visibleSize.width*0.7,m_visibleSize.height*0.1+m_visibleOrigin.y));
+    
+    btn_fire = MenuItemFont::create("fire", CC_CALLBACK_1(GameLayer::btnCallBack,this,"fire"));
+    btn_fire->setPosition(Vec2(m_visibleOrigin.x+m_visibleSize.width*0.9,m_visibleSize.height*0.1+m_visibleOrigin.y));
+    
+    auto menu = Menu::create(btn_Bomb,btn_SweetMagic,btn_jelly,btn_magicmirror,btn_fire,nullptr);
     this->addChild(menu);
     menu->setPosition(Vec2(m_visibleOrigin.x,m_visibleOrigin.y));
     
@@ -220,7 +273,7 @@ void GameLayer::initUI(){
     auto animation =Animation::create();
     for(int i =1; i<27;i++){
         Rect rect = Rect::ZERO;
-        auto texture = Director::getInstance()->getTextureCache()->getTextureForKey(StringUtils::format("Animation/bomb/SKT-boomTEXIAO%d.png",i));
+        auto texture = Director::getInstance()->getTextureCache()->addImage(StringUtils::format("Animation/bomb/SKT-boomTEXIAO%d.png",i));
         rect.size = texture->getContentSize();
         SpriteFrame *frame = SpriteFrame::createWithTexture(texture, rect);
         animation->addSpriteFrame(frame);
@@ -228,27 +281,63 @@ void GameLayer::initUI(){
     AnimationCache::getInstance()->addAnimation(animation,"bomb");
     animation->setDelayPerUnit(1.0f/26.0f);
     
-//    auto node = CSLoader::createNode("Animation/SKT-XEMxiaoshi/Layer.csb");
-//    this->addChild(node,100);
-//    auto timeLine = CSLoader::createTimeline("Animation/SKT-XEMxiaoshi/Layer.csb");
-//    node->runAction(timeLine);
-//    timeLine->play("Animation0", true);
+    //哈哈镜动画初始化
+    auto magicmirror =Animation::create();
+    for(int i =0; i<3;i++){
+        Rect rect = Rect::ZERO;
+        auto texture = Director::getInstance()->getTextureCache()->addImage(StringUtils::format("Animation/Magicmirror/hahajing%d.png",i));
+        rect.size = texture->getContentSize();
+        SpriteFrame *frame = SpriteFrame::createWithTexture(texture, rect);
+        magicmirror->addSpriteFrame(frame);
+    }
+    AnimationCache::getInstance()->addAnimation(magicmirror,"magicmirror");
+    magicmirror->setDelayPerUnit(0.3f/3.0f);
+    magicmirror->setRestoreOriginalFrame(true);
     
+    //火把 初始化
+    m_nodeFire = CSLoader::createNode("Animation/SKT-XHB-dianran/Layer.csb");
+    m_nodeFire->setIgnoreAnchorPointForPosition(false);
+    m_nodeFire->setAnchorPoint(Vec2(0.5,0.5));
+    this->addChild(m_nodeFire);
+    m_fireTimeline = CSLoader::createTimeline("Animation/SKT-XHB-dianran/Layer.csb");
+    m_nodeFire->runAction(m_fireTimeline);
+    m_nodeFire->setVisible(false);
+    
+//    auto node = Sprite::create();
+//    this->addChild(node,100);
+//    node->runAction(RepeatForever::create(Animate::create(magicmirror)));
+//    node->setPosition(m_visibleOrigin.x+m_visibleSize.width*0.5,m_visibleSize.height*0.5+m_visibleOrigin.y);
+   
+   // m_fireTimeline->play("animation0", true);
     
     this->initData();
+    this->scheduleUpdate();
+    //this->schedule(schedule_selector(GameLayer::slowUpdate), 0.05, CC_REPEAT_FOREVER, 0); // 开启update
 }
 void GameLayer::btnCallBack(Ref* ref,std::string name){
     if(!name.compare("bomb")){
-        if(m_usePropType==none){
-            static_cast<MenuItemFont*>(ref)->setScale(2.0f);
-            m_usePropType = bomb;
+        if(m_usePropType==bomb){
+            m_usePropType=none;
         }else{
-            m_usePropType = none;
-            static_cast<MenuItemFont*>(ref)->setScale(1.0f);
+             m_usePropType = bomb;
         }
     }else if(!name.compare("sweetMagic")){
-        if(canTouch==false){
+        if((m_layer_gameOver&&m_layer_gameOver->isVisible())||m_vector_moveSp.size()>0){ //游戏结束   m_vector_moveSp里面有sp 时 不可以触发事件
             return;
+        }
+         m_usePropType = none;
+        if(sweetMagicNode==nullptr){
+            sweetMagicNode= CSLoader::createNode("Animation/SKT-TMF/Layer.csb");
+            this->addChild(sweetMagicNode);
+            sweetMagicTimeLine = CSLoader::createTimeline("Animation/SKT-TMF/Layer.csb");
+            sweetMagicNode->runAction(sweetMagicTimeLine);
+            sweetMagicTimeLine->play("animation0", false);
+            sweetMagicTimeLine->setAnimationEndCallFunc("animation0", [=](){
+                sweetMagicNode->setVisible(false);
+            });
+        }else{
+            sweetMagicNode->setVisible(true);
+            sweetMagicTimeLine->play("animation0", false);
         }
         this->m_intEliminateNum=0;
         for(auto temp : this->m_mapSprite){
@@ -258,6 +347,44 @@ void GameLayer::btnCallBack(Ref* ref,std::string name){
                 }
             }
         }
+    }else if(!name.compare("Jelly")){
+        if(m_usePropType==jelly){
+            m_usePropType=none;
+        }else{
+            m_usePropType = jelly;
+        }
+    }else if(!name.compare("magicmirror")){
+        if(m_usePropType==magicmirror){
+            m_usePropType=none;
+        }else{
+            m_usePropType = magicmirror;
+        }
+    }else if(!name.compare("fire")){
+        if(m_usePropType==fire){
+            m_usePropType=none;
+        }else{
+            m_usePropType = fire;
+        }
+    }
+    btn_Bomb->setScale(1.0f);
+    btn_jelly->setScale(1.0f);
+    btn_magicmirror->setScale(1.0f);
+    btn_fire->setScale(1.0f);
+    m_nodeFire->setVisible(false);
+    if(m_fireTimeline!=nullptr&&m_fireTimeline->isPlaying()){
+        m_fireTimeline->stop();
+    }
+    if(m_usePropType==bomb){
+        btn_Bomb->setScale(1.5f);
+    }else if(m_usePropType==jelly){
+        btn_jelly->setScale(1.5f);
+    }else if(m_usePropType==magicmirror){
+        btn_magicmirror->setScale(1.5f);
+    }else if(m_usePropType==fire){
+        btn_fire->setScale(1.5f);
+        m_nodeFire->setVisible(true);
+        m_nodeFire->setPosition(btn_fire->getPosition());
+        m_fireTimeline->play("animation0", true);
     }
 }
 void GameLayer::readJson(std::string path,int id){
@@ -356,12 +483,6 @@ cocos2d::Sprite* GameLayer::addElement(const std::string path,const int tag,cons
     return sp;
 }
 void GameLayer::initData(){
-    m_intFourNum=3;
-    m_intOneNum=3;
-    m_intTwoNum = 3;
-    m_intThreeNum =3;
-    m_intChocolatesNum=0;
-    m_intClickNum =100;
     m_labelClickNum->setString(StringUtils::format("%d",m_intClickNum));
  //   this->readJson("configure/configure.json",m_intlevel);
    
@@ -408,9 +529,6 @@ void GameLayer::initData(){
         this->addElement(m_cltPath[0],0, positionIndex,"clt");
         delete [] positionIndex;
     }
-    
-    //点触摸 开启
-    canTouch = true;
 
 }
 cocos2d::Sprite* GameLayer::getChild(const int index1,const int index2){
@@ -475,8 +593,8 @@ void GameLayer::chocolateCollision(const int index1,const int index2){
         }
     }
 }
-void GameLayer::slowUpdate(float dt){
-    if(this->m_vector_moveSp.size()<=0 && canTouch == true){
+void GameLayer::update(float dt){
+    if(this->m_vector_moveSp.size()<=0||(m_layer_gameOver&&m_layer_gameOver->isVisible())){
         if(m_intClickNum<=0){
             this->GameOver(false);
         }
@@ -511,6 +629,76 @@ void GameLayer::slowUpdate(float dt){
                         }
                     }else if(!sp->getName().compare("clt")){ // 遇到的是巧克力
                         this->alteredClt(sp);
+                    }else if(!sp->getName().compare("gd")){
+                        auto spMove =static_cast<Sprite_New*>(*itrMoveSp);
+                        spMove->stopAllActions();
+                        Rect  moveRect = spMove->getBoundingBox();
+                        Rect  spRect = sp->getBoundingBox();
+                        if(spMove->getDirection()=='w'){
+                            spMove->setPositionY(spMove->getPositionY()-(moveRect.origin.y+moveRect.size.height-spRect.origin.y)-1);//下移
+                            spMove->setDirection('s');
+                        }else if(spMove->getDirection()=='s'){
+                            spMove->setPositionY(spMove->getPositionY()+spRect.origin.y+spRect.size.height-moveRect.origin.y+1);//上移
+                            spMove->setDirection('w');
+                        }else if(spMove->getDirection()=='a'){
+                            spMove->setPositionX(spMove->getPositionX()+spRect.origin.x+spRect.size.width-moveRect.origin.x+1);
+                            spMove->setDirection('d');
+                        }else if(spMove->getDirection()=='d'){
+                            spMove->setPositionX(spMove->getPositionX()-(moveRect.origin.x+moveRect.size.width-spRect.origin.x)-1);
+                            spMove->setDirection('a');
+                        }
+                        if((*itrMoveSp)->getBoundingBox().intersectsRect(sp->getBoundingBox())){
+                            throw ("ERROR");//计算有误 需要优化
+                        }
+                        static_cast<Sprite_New*>(spMove)->moveAction([=](){m_vector_moveSp.eraseObject(spMove);});
+                        needBreak = true;
+                        break;
+                    }else if(!sp->getName().compare("magicmirror")){//遇到哈哈镜
+                        auto spMove =static_cast<Sprite_New*>(*itrMoveSp);
+                        spMove->stopAllActions();
+                        Rect  moveRect = spMove->getBoundingBox();
+                        Rect  spRect = sp->getBoundingBox();
+                        int i= ((int*)sp->getUserData())[0];
+                        int j= ((int*)sp->getUserData())[1];
+                        if(spMove->getDirection()=='w'){
+                            spMove->setDirection('d');
+                            spMove->setPosition(Vec2(m_ArrayRect[i][j-1].origin.x+40,m_ArrayRect[i][j-1].origin.y+40));
+                            if(moveRect.origin.y+moveRect.size.height>spRect.origin.y){
+                                spMove->setPositionY(spMove->getPositionY()-(moveRect.origin.y+moveRect.size.height-spRect.origin.y)-1);//保证 不在触碰
+                            }
+                        }else if(spMove->getDirection()=='d'){
+                            spMove->setDirection('s');
+                            spMove->setPosition(Vec2(m_ArrayRect[i-1][j].origin.x+40,m_ArrayRect[i-1][j].origin.y+40));
+                            if(moveRect.origin.x+moveRect.size.width>spRect.origin.x){
+                                spMove->setPositionX(spMove->getPositionX()-(moveRect.origin.x+moveRect.size.width-spRect.origin.x)-1);//保证 不在触碰
+                            }
+                        }else if(spMove->getDirection()=='s'){
+                            spMove->setDirection('a');
+                            spMove->setPosition(Vec2(m_ArrayRect[i][j+1].origin.x+40,m_ArrayRect[i][j+1].origin.y+40));
+                            if(moveRect.origin.y<spRect.origin.y+spRect.size.height){
+                                spMove->setPositionY(spMove->getPositionY()+(spRect.origin.y+spRect.size.height - moveRect.origin.y)+1);//保证 不在触碰
+                            }
+                        }else if(spMove->getDirection()=='a'){
+                            spMove->setDirection('w');
+                            spMove->setPosition(Vec2(m_ArrayRect[i+1][j].origin.x+40,m_ArrayRect[i+1][j].origin.y+40));
+                            if(spRect.origin.x+spRect.size.width>moveRect.origin.x){
+                                spMove->setPositionX(spMove->getPositionX()+(spRect.origin.x+spRect.size.width-moveRect.origin.x)+1);
+                            }
+                        }
+                        sp->setTag(sp->getTag()+1);
+                        if((*itrMoveSp)->getBoundingBox().intersectsRect(sp->getBoundingBox())){
+                            throw ("ERROR");//计算有误 需要优化
+                        }
+                        if(sp->getTag()>=5){
+                            sp->runAction(Sequence::create(Animate::create(AnimationCache::getInstance()->getAnimation("magicmirror")),CallFunc::create([=](){
+                                this->deleteChild(sp);
+                            }),nullptr));
+                        }else{
+                            sp->runAction(Animate::create(AnimationCache::getInstance()->getAnimation("magicmirror")));
+                        }
+                        static_cast<Sprite_New*>(spMove)->moveAction([=](){m_vector_moveSp.eraseObject(spMove);});
+                        needBreak = true;
+                        break;
                     }
                     else{
                          this->alteredState(sp);
@@ -551,7 +739,6 @@ void GameLayer::GameOver(bool vector){
     if(m_layer_gameOver!=nullptr&&m_layer_gameOver->isVisible()==true){
         return;
     }
-    canTouch = false;
     std::string vectorStr= "";
     if(vector==true){
         vectorStr="Successful";
@@ -636,30 +823,26 @@ void GameLayer::alteredState(Sprite* sp){
                 
             }
             for(int i = 0; i<4;i++){  //向4个反向 发射 4个sp
-                auto spMove = Sprite::createWithTexture(Director::getInstance()->getTextureCache()->getTextureForKey(m_ttqpath[0]));
+                auto spMove = Sprite_New::createWithTexture(Director::getInstance()->getTextureCache()->getTextureForKey(m_ttqpath[0]));
                 spMove->setTag(1);
+                //spMove->set
                 this->addChild(spMove);
                 spMove->setPosition(sp->getPosition());
                 spMove->setScale(1/4.0f);
-                float duration =0.0f;
                 Vec2 postion;
                 if(i==0){//向上飞
-                    duration = 13.0f-spMove->getPositionY()/80.0f;
-                    postion = Vec2(spMove->getPositionX(),13.0f*80.0f+this->m_visibleOrigin.y);
+                    spMove->setDirection('w');
                 }else if(i==1){  //向下飞
-                    duration = spMove->getPositionY()/80.0f-2.0f;
-                    postion = Vec2(spMove->getPositionX(),2.0f*80.0f+this->m_visibleOrigin.y);
+                    spMove->setDirection('s');
+                   
                 }else if(i==2){  //向左飞
-                    duration = spMove->getPositionX()/80.0f+1.0f;
-                    postion = Vec2(-80.0f+this->m_visibleOrigin.x,spMove->getPositionY());
+                    spMove->setDirection('a');
+                    
                 }else{//向右飞
-                    duration =10.0f - spMove->getPositionX()/80.0f;
-                    postion = Vec2(10.0f*80.0f+this->m_visibleOrigin.x,spMove->getPositionY());
+                    spMove->setDirection('d');
                 }
-                this->m_vector_moveSp.pushBack(spMove);
-                spMove->runAction(Sequence::create(MoveTo::create(duration*0.3,postion),DelayTime::create(0.2f),CallFunc::create([=](){
-                    this->m_vector_moveSp.eraseObject(spMove);
-                }),RemoveSelf::create(),NULL));  //延时0.2 秒移除
+                m_vector_moveSp.pushBack(spMove);
+                spMove->moveAction([=](){m_vector_moveSp.eraseObject(spMove);});
             }
             this->deleteChild(sp);
             bool needBreak = false;

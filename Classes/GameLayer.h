@@ -1,8 +1,12 @@
 #pragma once
 #include "cocos2d.h"
+#include "cocostudio/CocoStudio.h"
 enum usePropType{
     none,
-    bomb
+    bomb,
+    jelly,
+    magicmirror,
+    fire
 };
 class GameLayer : public cocos2d::Layer
 {
@@ -22,9 +26,18 @@ private:
     cocos2d::Layer* m_layer_gameOver{nullptr};
     cocos2d::Label* m_labelClickNum;
     cocos2d::Rect m_ArrayRect[9][9];
+    cocos2d::Node* sweetMagicNode{nullptr};
+    cocostudio::timeline::ActionTimeline* sweetMagicTimeLine{nullptr};
+    cocos2d::Node* m_nodeFire{nullptr};
+    cocostudio::timeline::ActionTimeline* m_fireTimeline{nullptr};
+    cocos2d::MenuItemFont* btn_Bomb;
+    cocos2d::MenuItemFont* btn_SweetMagic;
+    cocos2d::MenuItemFont* btn_jelly;
+    cocos2d::MenuItemFont* btn_magicmirror;
+    cocos2d::MenuItemFont* btn_fire;
+ 
     int m_intEliminateNum{0}; //连消数量
     int m_intClickNum{0};  //点击次数
-    bool canTouch{false};
     void btnCallBack(Ref* ref,std::string name);
     int m_intlevel{1};
     int m_intOneNum{0};
@@ -44,11 +57,12 @@ private:
     cocos2d::Sprite* addElement(const std::string path,const int tag,const int* positonIndex,const std::string name);
     void chocolateCollision(const int index1,const int index2);
     void initData();//初始化游戏数据
-    void slowUpdate(float dt);
+    void update(float dt);
     void alteredState(cocos2d::Sprite* sp);
     void alteredClt(cocos2d::Sprite* sp);
     void GameOver(const bool vector);//游戏结束
     void GameRestart(Ref* ref);
+    
     virtual bool init();
     void menuCloseCallback(cocos2d::Ref* pSender);
     void onEnterTransitionDidFinish();
