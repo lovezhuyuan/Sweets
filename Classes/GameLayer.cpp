@@ -483,8 +483,14 @@ cocos2d::Sprite* GameLayer::addElement(const std::string path,const int tag,cons
     return sp;
 }
 void GameLayer::initData(){
-    m_labelClickNum->setString(StringUtils::format("%d",m_intClickNum));
- //   this->readJson("configure/configure.json",m_intlevel);
+//    m_intFourNum=3;
+//    m_intOneNum=3;
+//    m_intTwoNum = 3;
+//    m_intThreeNum =3;
+//    m_intChocolatesNum=0;
+//    m_intClickNum =100;
+//    m_labelClickNum->setString(StringUtils::format("%d",m_intClickNum));
+    this->readJson("configure/configure.json",m_intlevel);
    
     //初始化地图 精灵
     for(int i= 0; i<m_intOneNum;i++){
