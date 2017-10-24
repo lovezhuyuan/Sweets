@@ -1,6 +1,6 @@
 #pragma once
 #include "cocos2d.h"
-#include "cocostudio/CocoStudio.h"
+#include "editor-support/cocostudio/CocoStudio.h"
 enum usePropType{
     none,
     bomb,
