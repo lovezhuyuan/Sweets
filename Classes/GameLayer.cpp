@@ -397,6 +397,9 @@ void GameLayer::readJson(std::string path,int id){
     m_intTwoNum = 0;
     m_intThreeNum = 0;
     m_intFourNum = 0;
+    m_intIceNum=0;
+    m_intDevilNum=0;
+    m_intChocolatesNum=0;
     //赋值
     if(readdoc[StringUtils::format("%d",id).c_str()].HasMember("0")){
         m_intClickNum = readdoc[StringUtils::format("%d",id).c_str()]["0"].GetInt();
@@ -491,7 +494,7 @@ void GameLayer::initData(){
 //    m_intClickNum =100;
 //    m_labelClickNum->setString(StringUtils::format("%d",m_intClickNum));
     this->readJson("configure/configure.json",m_intlevel);
-   
+    CCLOG("%d",m_intOneNum+m_intTwoNum+m_intThreeNum+m_intFourNum+ m_intIceNum+m_intDevilNum+m_intChocolatesNum);
     //初始化地图 精灵
     for(int i= 0; i<m_intOneNum;i++){
         int* positionIndex = new int[2];
