@@ -1,6 +1,6 @@
 #include "GameLayer.h"
 #include "AppDelegate.h"
-#include "json/document.h"
+#include "external/json/document.h"
 #include "Sprite_New.h"
 USING_NS_CC;
 
@@ -391,37 +391,37 @@ void GameLayer::readJson(std::string path,int id){
     rapidjson::Document readdoc;
     std::string load_str = FileUtils::getInstance()->getStringFromFile(path);
     readdoc.Parse<0>(load_str.c_str());
-    rapidjson::Value object = readdoc[StringUtils::format("%d",id).c_str()].GetObject();
+    //auto object = readdoc[StringUtils::format("%d",id).c_str()][0];
     //数据先置为0
     m_intOneNum = 0;
     m_intTwoNum = 0;
     m_intThreeNum = 0;
     m_intFourNum = 0;
     //赋值
-    if(object.HasMember("0")){
-        m_intClickNum = object["0"].GetInt();
+    if(readdoc[StringUtils::format("%d",id).c_str()].HasMember("0")){
+        m_intClickNum = readdoc[StringUtils::format("%d",id).c_str()]["0"].GetInt();
         m_labelClickNum->setString(StringUtils::format("%d",m_intClickNum));
     }
-    if(object.HasMember("1")){
-         m_intOneNum = object["1"].GetInt();
+    if(readdoc[StringUtils::format("%d",id).c_str()].HasMember("1")){
+         m_intOneNum = readdoc[StringUtils::format("%d",id).c_str()]["1"].GetInt();
     }
-    if(object.HasMember("2")){
-         m_intTwoNum = object["2"].GetInt();
+    if(readdoc[StringUtils::format("%d",id).c_str()].HasMember("2")){
+         m_intTwoNum = readdoc[StringUtils::format("%d",id).c_str()]["2"].GetInt();
     }
-    if(object.HasMember("3")){
-        m_intThreeNum = object["3"].GetInt();
+    if(readdoc[StringUtils::format("%d",id).c_str()].HasMember("3")){
+        m_intThreeNum = readdoc[StringUtils::format("%d",id).c_str()]["3"].GetInt();
     }
-    if(object.HasMember("4")){
-        m_intFourNum = object["4"].GetInt();
+    if(readdoc[StringUtils::format("%d",id).c_str()].HasMember("4")){
+        m_intFourNum = readdoc[StringUtils::format("%d",id).c_str()]["4"].GetInt();
     }
-    if(object.HasMember("5")){ //冰块
-        m_intIceNum = object["5"].GetInt();
+    if(readdoc[StringUtils::format("%d",id).c_str()].HasMember("5")){ //冰块
+        m_intIceNum = readdoc[StringUtils::format("%d",id).c_str()]["5"].GetInt();
     }
-    if(object.HasMember("6")){ //小恶魔
-        m_intDevilNum = object["6"].GetInt();
+    if(readdoc[StringUtils::format("%d",id).c_str()].HasMember("6")){ //小恶魔
+        m_intDevilNum = readdoc[StringUtils::format("%d",id).c_str()]["6"].GetInt();
     }
-    if(object.HasMember("7")){ //巧克力
-        m_intChocolatesNum = object["7"].GetInt();
+    if(readdoc[StringUtils::format("%d",id).c_str()].HasMember("7")){ //巧克力
+        m_intChocolatesNum = readdoc[StringUtils::format("%d",id).c_str()]["7"].GetInt();
     }
 }
 int* GameLayer::getEmptyIndex(int* index){
@@ -526,7 +526,7 @@ void GameLayer::initData(){
     for(int i =0; i<m_intDevilNum;i++){   //
         int* positionIndex = new int[2];
         positionIndex = getEmptyIndex(positionIndex);
-        this->addElement(m_ttqpath[0],9, positionIndex,"devil");
+      //  this->addElement(m_ttqpath[0],9, positionIndex,"devil");
         delete [] positionIndex;
     }
     for(int i =0;i<m_intChocolatesNum;i++){
@@ -594,7 +594,7 @@ void GameLayer::chocolateCollision(const int index1,const int index2){
             }
         }
         if(num>=15){
-            this->GameOver(false);
+           // this->GameOver(false);
             return;
         }
     }
@@ -775,7 +775,7 @@ void GameLayer::GameOver(bool vector){
 void GameLayer::alteredClt(cocos2d::Sprite* sp){
     int tag = sp->getTag();
     tag++;
-    if(tag>=sizeof(m_cltPath)/sizeof(m_cltPath[0])){
+    if(tag>=m_cltPath.size()){
         (*(this->m_mapSprite.find(((int*)sp->getUserData())[0]))).second.erase(((int*)sp->getUserData())[1]);//删除sp
         for(int i = 0; i<4;i++){  //向4个反向 发射 4个sp
             int index1 = (((int*)sp->getUserData())[0]);
