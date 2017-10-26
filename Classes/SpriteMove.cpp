@@ -1,20 +1,20 @@
-#include "Sprite_New.h"
+#include "SpriteMove.h"
 #include "AppDelegate.h"
 USING_NS_CC;
-bool Sprite_New::init(){
+bool SpriteMove::init(){
     if ( !Sprite::init() )
     {
         return false;
     }
     return true;
 }
-void Sprite_New::onEnter(){
+void SpriteMove::onEnter(){
     Sprite::onEnter();
     //数据初始化
     this->m_visibleSize = Director::getInstance()->getVisibleSize();
     this->m_visibleOrigin = Director::getInstance()->getVisibleOrigin();
 }
-void Sprite_New::moveAction(std::function<void()> func){
+void SpriteMove::moveAction(std::function<void()> func){
     float duration =0.0f;
     Vec2 postion;
     if(this->getDirection()=='w'){
@@ -36,9 +36,9 @@ void Sprite_New::moveAction(std::function<void()> func){
         }
     }),RemoveSelf::create(),NULL));  //延时0.2 秒移除
 }
-Sprite_New* Sprite_New::createWithTexture(Texture2D *texture)
+SpriteMove* SpriteMove::createWithTexture(Texture2D *texture)
 {
-    Sprite_New *sprite = new (std::nothrow) Sprite_New();
+    SpriteMove *sprite = new (std::nothrow) SpriteMove();
     if (sprite && sprite->initWithTexture(texture))
     {
         sprite->autorelease();
