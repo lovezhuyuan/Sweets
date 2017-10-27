@@ -192,7 +192,11 @@ bool GameLayer::onTouchBegan(Touch * touch,Event* event){//mutable
     //不在使用道具状态
     Vec2 index = positionConverToIndex(location);
     auto sp = getChild(index.x,index.y);
-    if(nullptr==sp ||m_intClickNum<=0 ){  // 点在空格上或者  没有点击数了
+    if(m_intClickNum<=0){
+        return false;
+    }
+    if(nullptr==sp){  // 点在空格上或者  没有点击数了
+        this->addElement(m_ttqpath[0],0,index.x,index.y,"ttq");
         return false;
     }
     if(!sp->getName().compare("ttq")||!sp->getName().compare("ice")){
@@ -766,7 +770,7 @@ void GameLayer::update(float dt){
                             this->addChild(node,1);
                             node->setIgnoreAnchorPointForPosition(false);
                             node->setAnchorPoint(Vec2(0.5f,0.5f));
-                            node->setPosition(sp->getPosition());
+                            node->setPosition(Vec2(sp->getPositionX(),sp->getPositionY()+20));
                             node->setScale(300.0/node->getBoundingBox().size.width, 300.0/node->getBoundingBox().size.height);
                             auto timeLine = CSLoader::createTimeline("Animation/SKT-XEMxiaoshi/Layer.csb");
                             timeLine->play("animation0", false);
