@@ -66,11 +66,12 @@ void GameLayer::onEnterTransitionDidFinish(){
     m_cltPath.push_back("ttq/chocolate4.png");
     m_cltPath.push_back("ttq/chocolate5.png");
     
-    m_uipath.push_back("Map/DDLFT_ditu.png");
     
+    m_uipath.push_back("Map/DDLFT_ditu.png");
     m_uipath.push_back("Animation/SKT-BINGKUAI/SKT-BING-bingtangtexiao.png");
     m_uipath.push_back("Animation/SKT-BINGKUAI/SKT-BING-texiao2.png");
-    
+    m_uipath.push_back("ttq/ykt_chq2.png");
+    m_uipath.push_back("ttq/ykt_chq2_tw.png");
     //加载图片缓存
     std::vector<std::vector<std::string>> path;
     path.push_back(m_ttqpath);
@@ -125,7 +126,7 @@ bool GameLayer::onTouchBegan(Touch * touch,Event* event){//mutable
             node->setIgnoreAnchorPointForPosition(false);
             node->setAnchorPoint(Vec2(0.5,0.5));
             this->addChild(node);
-            node->setPosition(Vec2(this->indexConverToPosition(vec).x,this->indexConverToPosition(vec).y));
+            node->setPosition(this->indexConverToPosition(vec));
             auto timeline = CSLoader::createTimeline("Animation/SKT-XHB-dianran/Layer.csb");
             node->runAction(timeline);
             timeline->play("animation1",false);
@@ -146,7 +147,8 @@ bool GameLayer::onTouchBegan(Touch * touch,Event* event){//mutable
                 //爆炸特效
                 auto bomb = Sprite::create();
                 this->addChild(bomb);
-                bomb->setPosition(Vec2(this->indexConverToPosition(vec).x,this->indexConverToPosition(vec).y));
+                auto position = vec;
+                bomb->setPosition(this->indexConverToPosition(position));
                 bomb->runAction(Sequence::create(Animate::create(AnimationCache::getInstance()->getAnimation("bomb")),RemoveSelf::create(),nullptr));
                 std::function<void(Sprite* sptemp)> func =[=](Sprite* sptemp){
                     if(sptemp!=nullptr){
@@ -277,6 +279,66 @@ void GameLayer::initUI(){ //初始化UI界面
     
     // m_fireTimeline->play("animation0", true);
     
+   
+    
+    
+//    auto armature_zhongliu = cocostudio::Armature::create("xiaoemo");
+//    armature_zhongliu->getAnimation()->play("Animation1",-1,0);
+//    this->addChild(armature_zhongliu);
+//    armature_zhongliu->setPosition(Vec2(m_visibleSize.width*0.5+m_visibleOrigin.x,m_visibleOrigin.y+m_visibleSize.height*0.5));
+//    armature_zhongliu->getAnimation()->setMovementEventCallFunc([=](cocostudio::Armature* armature,cocostudio::MovementEventType moveEventype,const std::string& id){
+//        if(moveEventype==cocostudio::MovementEventType::COMPLETE){
+//            armature->removeFromParent();
+//        }
+//    });
+    
+    
+    
+//    auto node = CSLoader::createNode("Animation/SKT-XEMxiaoshi/Layer.csb");
+//    this->addChild(node);
+//    node->setIgnoreAnchorPointForPosition(false);
+//    node->setAnchorPoint(Vec2(0.5f,0.5f));
+//    node->setPosition(Vec2(m_visibleSize.width*0.5+m_visibleOrigin.x,m_visibleOrigin.y+m_visibleSize.height*0.5));
+//    auto timeLine = CSLoader::createTimeline("Animation/SKT-XEMxiaoshi/Layer.csb");
+//    timeLine->play("animation0", true);
+//    node->runAction(timeLine);
+    
+    
+    
+    //初始化碎糖动画
+    this->initAnimation("Animation/ttqBroken/%d.png", 1, 6, 1.0f/6.0f, "ttqbroken");
+    
+//    auto sp = Sprite::create("ttq/ykt_chq2.png");
+//    this->addChild(sp,1000);
+//    sp->setPosition(Vec2(m_visibleOrigin.x+m_visibleSize.width*0.5,m_visibleOrigin.y+m_visibleSize.height*0.5));
+//    //上飞
+//    auto child = Sprite::create("ttq/ykt_chq2_tw.png");
+//    sp->addChild(child);
+//    child->setPosition(Vec2(sp->getBoundingBox().size.width*0.5,-sp->getBoundingBox().size.height*0.5));
+//   
+//    //右飞
+//    auto child2 = Sprite::create("ttq/ykt_chq2_tw.png");
+//    sp->addChild(child2);
+//    child2->setPosition(Vec2(-sp->getBoundingBox().size.width*0.5,sp->getBoundingBox().size.height*0.5));
+//    child2->setRotation(90);
+//    
+//    //下飞
+//    auto child3 = Sprite::create("ttq/ykt_chq2_tw.png");
+//    sp->addChild(child3);
+//    child3->setPosition(Vec2(sp->getBoundingBox().size.width*0.5,1.5f*sp->getBoundingBox().size.height));
+//    child3->setRotation(180);
+//    //左飞
+//    auto child4 = Sprite::create("ttq/ykt_chq2_tw.png");
+//    sp->addChild(child4);
+//    child4->setPosition(Vec2(1.5f*sp->getBoundingBox().size.width,sp->getBoundingBox().size.height*0.5));
+//    child4->setRotation(-90);
+    
+    
+//    auto node = Sprite::create();
+//    this->addChild(node,1000);
+//    node->setPosition(Vec2(m_visibleOrigin.x+m_visibleSize.width*0.5,m_visibleOrigin.y+m_visibleSize.height*0.5));
+//    node->runAction(RepeatForever::create(Animate::create(AnimationCache::getInstance()->getAnimation("ttqbroken"))));
+    
     this->initData();
     this->scheduleUpdate();
     //this->schedule(schedule_selector(GameLayer::slowUpdate), 0.05, CC_REPEAT_FOREVER, 0); // 开启update
@@ -290,9 +352,9 @@ void GameLayer::initAnimation(const char*  formatPath,const int & starIndex,cons
         SpriteFrame *frame = SpriteFrame::createWithTexture(texture, rect);
         animation->addSpriteFrame(frame);
     }
-    AnimationCache::getInstance()->addAnimation(animation,animationName);
     animation->setDelayPerUnit(perUnit);
     animation->setRestoreOriginalFrame(restoreOriginalFrame);
+    AnimationCache::getInstance()->addAnimation(animation,animationName);
 }
 bool GameLayer::isCanTouch(){
     if(this->m_vector_moveSp.size()>0 ||(m_layer_gameOver&& m_layer_gameOver->isVisible())||this->m_intClickNum<=0){
@@ -318,9 +380,10 @@ void GameLayer::btnCallBack(Ref* ref,const std::string& name){
         m_usePropType = none;
         if(sweetMagicNode==nullptr){
             sweetMagicNode= CSLoader::createNode("Animation/SKT-TMF/Layer.csb");
-            this->addChild(sweetMagicNode);
+            this->addChild(sweetMagicNode,1);
             sweetMagicTimeLine = CSLoader::createTimeline("Animation/SKT-TMF/Layer.csb");
             sweetMagicNode->runAction(sweetMagicTimeLine);
+            sweetMagicNode->setPositionY(sweetMagicNode->getPositionY()-40);
             sweetMagicTimeLine->play("animation0", false);
             sweetMagicTimeLine->setAnimationEndCallFunc("animation0", [=](){
                 sweetMagicNode->setVisible(false);
@@ -362,7 +425,7 @@ void GameLayer::btnCallBack(Ref* ref,const std::string& name){
                 m_nodeFire = CSLoader::createNode("Animation/SKT-XHB-dianran/Layer.csb");
                 m_nodeFire->setIgnoreAnchorPointForPosition(false);
                 m_nodeFire->setAnchorPoint(Vec2(0.5,0.5));
-                this->addChild(m_nodeFire);
+                this->addChild(m_nodeFire,1 );
                 m_fireTimeline = CSLoader::createTimeline("Animation/SKT-XHB-dianran/Layer.csb");
                 m_nodeFire->runAction(m_fireTimeline);
             }
@@ -466,13 +529,23 @@ cocos2d::Sprite* GameLayer::addElement(const std::string & path,const int & tag,
     SpriteNew* sp = nullptr;
     if(!name.compare("ice")){
         sp = Sprite_Ice::createWithTexture(Director::getInstance()->getTextureCache()->getTextureForKey(path));
-    }else{
+    }else if(!name.compare("devil")){
+        sp = SpriteNew::createWithTexture(Director::getInstance()->getTextureCache()->getTextureForKey(path));
+        auto armature = cocostudio::Armature::create("xiaoemo");
+        armature->setVisible(false);
+        armature->setName("xiaoemo");
+        sp->addChild(armature,1);
+        armature->setScale(80.0/armature->getBoundingBox().size.width, 80.0/armature->getBoundingBox().size.height);
+        armature->setPosition(Vec2(sp->getBoundingBox().size.width*0.5,-10));
+    }
+    else{
         sp = SpriteNew::createWithTexture(Director::getInstance()->getTextureCache()->getTextureForKey(path));
     }
     this->addChild(sp);
     Vec2 position = Vec2(index1,index2);
     sp->setPosition(this->indexConverToPosition(position));
-    sp->setIndex(index1, index2);
+    Vec2 vec = Vec2(index1,index2);
+    sp->setIndex(vec);
     sp->setTag(tag);
     sp->setName(name);
     if(m_mapSprite.find(index1)==m_mapSprite.end()){//map中不存在这个对象
@@ -493,7 +566,9 @@ cocos2d::Sprite* GameLayer::addElement(const std::string & path,const int & tag,
     return sp;
 }
 Vec2 GameLayer::indexConverToPosition(Vec2 & vec){ //返回格子中点
-   return vec = Vec2(this->m_visibleOrigin.x+(vec.x+0.5)*80,(vec.y+0.5)*80+240);
+    vec.x =this->m_visibleOrigin.x+(vec.x+0.5)*80;
+    vec.y = (vec.y+0.5)*80+240;
+    return vec;
 }
 Vec2 GameLayer::positionConverToIndex( Vec2 & vec){
     vec.x = int(vec.x-this->m_visibleOrigin.x)/80;
@@ -506,10 +581,10 @@ void GameLayer::initData(){
     //    m_intTwoNum = 3;
     //    m_intThreeNum =3;
     //    m_intChocolatesNum=0;
-     m_ArrayNum[3] =5;
-     m_intClickNum =100;
+    // m_ArrayNum[3] =5;
+    // m_intClickNum =100;
     //    m_labelClickNum->setString(StringUtils::format("%d",m_intClickNum));
-   // this->readJson("configure/configure.json",m_intlevel);
+    this->readJson("configure/configure.json",m_intlevel);
     //CCLOG("%d",m_intOneNum+m_intTwoNum+m_intThreeNum+m_intFourNum+ m_intIceNum+m_intDevilNum+m_intChocolatesNum);
     //初始化地图 精灵
     int positionIndex[2] = {0,0};
@@ -542,13 +617,19 @@ void GameLayer::initData(){
        // static_cast<Sprite_Ice*>(ice)->setIceLayerNum(1); //冰层数
         static_cast<Sprite_Ice*>(ice)->alterTtqLayerNum(ttqLayerNum); //甜甜圈 数量
     }
-    for(int i =0; i<m_ArrayNum[5];i++){   //
+    if(m_ArrayNum[5]>0){ //添加图片缓存
+        SpriteFrameCache::getInstance()->addSpriteFramesWithFile("Animation/SKT-XEMchi/xiaoemo/xiaoemo0.plist");
+        cocostudio::ArmatureDataManager::getInstance()->addArmatureFileInfo("Animation/SKT-XEMchi/xiaoemo/xiaoemo.ExportJson");
+        Director::getInstance()->getTextureCache()->addImage("ttq/SKT-xiaoemo.png");
+        
+    }
+    for(int i =0; i<m_ArrayNum[5];i++){   //小恶魔
         getEmptyIndex(&(positionIndex[0]));
-        // this->addElement(m_ttqpath[0],9, positionIndex[0],positionIndex[1],"devil");
+        this->addElement("ttq/SKT-xiaoemo.png",0, positionIndex[0],positionIndex[1],"devil");
     }
     for(int i =0;i<m_ArrayNum[6];i++){
         getEmptyIndex(&(positionIndex[0]));
-        this->addElement(m_cltPath[0],0, positionIndex[0],positionIndex[1],"clt");
+        this->addElement(m_cltPath[4],5, positionIndex[0],positionIndex[1],"clt");
     }
 }
 cocos2d::Sprite* GameLayer::getChild(const int & index1,const int& index2){
@@ -571,10 +652,10 @@ void GameLayer::deleteChild(cocos2d::Sprite*  sp){
     if(sp==nullptr){
         return;
     }
-    (*(this->m_mapSprite.find((static_cast<SpriteNew*>(sp)->getIndex())[0]))).second.erase((static_cast<SpriteNew*>(sp)->getIndex())[1]);//删除sp
+    (*(this->m_mapSprite.find((static_cast<SpriteNew*>(sp)->getIndex()).x))).second.erase((static_cast<SpriteNew*>(sp)->getIndex()).y);//删除sp
     auto name = sp->getName();
     if(!name.compare("ice")&&static_cast<Sprite_Ice*>(sp)->getTtqLayerNum()>0){
-        this->addElement(m_ttqpath[static_cast<Sprite_Ice*>(sp)->getTtqLayerNum()-1],static_cast<Sprite_Ice*>(sp)->getTtqLayerNum()-1, (static_cast<SpriteNew*>(sp)->getIndex())[0],(static_cast<SpriteNew*>(sp)->getIndex())[1],"ttq");
+        this->addElement(m_ttqpath[static_cast<Sprite_Ice*>(sp)->getTtqLayerNum()-1],static_cast<Sprite_Ice*>(sp)->getTtqLayerNum()-1, (static_cast<SpriteNew*>(sp)->getIndex()).x,(static_cast<SpriteNew*>(sp)->getIndex()).y,"ttq");
     }
     sp->removeFromParent();
     sp=nullptr;
@@ -599,7 +680,8 @@ void GameLayer::chocolateCollision(const int index1,const int index2){
         if(!sp->getName().compare("ttq")){//巧克力遇到甜甜圈
             auto data =  static_cast<SpriteNew*>(sp)->getIndex();
             deleteChild(sp);
-            this->addElement(m_cltPath[0],0,data[0],data[1],"clt");
+            
+            this->addElement(m_cltPath[0],0,data.x,data.y,"clt");
             
         }else if(!sp->getName().compare("devil"))//遇到小恶魔
         {
@@ -666,10 +748,35 @@ void GameLayer::update(float dt){
             static_cast<Sprite_Ice*>(sp)->alterTtqLayerNum(1);
         }
         else if(!sp->getName().compare("devil")){  //小糖块遇到 小恶魔
-            sp->setTag(sp->getTag()+1);
-            if(sp->getTag()>=10){
-                this->deleteChild(sp);
+            if(sp->getTag()>=2){
+                continue;
             }
+            sp->setTag(sp->getTag()+1);
+            auto eat =static_cast<cocostudio::Armature *> (sp->getChildByName("xiaoemo"));
+            eat->setVisible(true);
+            sp->setOpacity(0);
+            eat->getAnimation()->play("Animation1",-1,0);
+            eat->getAnimation()->setMovementEventCallFunc([=](cocostudio::Armature* armature,cocostudio::MovementEventType moveEventype,const std::string& id){
+                    if(moveEventype==cocostudio::MovementEventType::COMPLETE){
+                        eat->setVisible(false);
+                        sp->setOpacity(255);
+                        if(sp->getTag()>=2){
+                            //离开动画
+                            auto node = CSLoader::createNode("Animation/SKT-XEMxiaoshi/Layer.csb");
+                            this->addChild(node,1);
+                            node->setIgnoreAnchorPointForPosition(false);
+                            node->setAnchorPoint(Vec2(0.5f,0.5f));
+                            node->setPosition(sp->getPosition());
+                            node->setScale(300.0/node->getBoundingBox().size.width, 300.0/node->getBoundingBox().size.height);
+                            auto timeLine = CSLoader::createTimeline("Animation/SKT-XEMxiaoshi/Layer.csb");
+                            timeLine->play("animation0", false);
+                            timeLine->setAnimationEndCallFunc("animation0", [=](){node->removeFromParent();});
+                            node->runAction(timeLine);
+                            
+                            this->deleteChild(sp);
+                        }
+                    }
+            });
         }else if(!sp->getName().compare("clt")){ // 遇到的是巧克力
             this->alteredClt(sp);
         }else if(!sp->getName().compare("gd")){
@@ -705,8 +812,8 @@ void GameLayer::update(float dt){
                // spMove->setPositionX(spMove->getPositionX()-(moveRect.origin.x+moveRect.size.width-spRect.origin.x)-1);
                 spMove->setDirection('a');
             }
-            CCASSERT((*itrMoveSp)->getBoundingBox().intersectsRect(sp->getBoundingBox()), "error Calculation");
-            static_cast<SpriteMove*>(spMove)->moveAction([=](){m_vector_moveSp.eraseObject(spMove);});
+            static_cast<SpriteMove*>(spMove)->moveAction([=](){
+                m_vector_moveSp.eraseObject(spMove);});
             needBreak = true;
             break;
         }else if(!sp->getName().compare("magicmirror")){//遇到哈哈镜
@@ -714,8 +821,8 @@ void GameLayer::update(float dt){
             spMove->stopAllActions();
             Rect  moveRect = spMove->getBoundingBox();
             Rect  spRect = sp->getBoundingBox();
-            int i= (static_cast<SpriteNew*>(sp)->getIndex())[0];
-            int j= (static_cast<SpriteNew*>(sp)->getIndex())[1];
+            int i= (static_cast<SpriteNew*>(sp)->getIndex()).x;
+            int j= (static_cast<SpriteNew*>(sp)->getIndex()).y;
             Vec2 position;
             if(spMove->getDirection()=='w'){
                 spMove->setDirection('d');
@@ -742,7 +849,6 @@ void GameLayer::update(float dt){
                
             }
             sp->setTag(sp->getTag()+1);
-          //  CCASSERT((*itrMoveSp)->getBoundingBox().intersectsRect(sp->getBoundingBox()), "error Calculation");
             if(sp->getTag()>=5){
                 sp->runAction(Sequence::create(Animate::create(AnimationCache::getInstance()->getAnimation("magicmirror")),CallFunc::create([=]()mutable{
                 //    this->deleteChild(sp);
@@ -815,10 +921,10 @@ void GameLayer::alteredClt(cocos2d::Sprite* &sp){
     int tag = sp->getTag();
     tag++;
     if(tag>=m_cltPath.size()){
-        (*(this->m_mapSprite.find((static_cast<SpriteNew*>(sp)->getIndex())[0]))).second.erase((static_cast<SpriteNew*>(sp)->getIndex())[1]);//删除sp
+        (*(this->m_mapSprite.find((static_cast<SpriteNew*>(sp)->getIndex()).x))).second.erase((static_cast<SpriteNew*>(sp)->getIndex()).y);//删除sp
         for(int i = 0; i<4;i++){  //向4个反向 发射 4个sp
-            int index1 = ((static_cast<SpriteNew*>(sp)->getIndex())[0]);
-            int index2 = ((static_cast<SpriteNew*>(sp)->getIndex())[1]);
+            int index1 = ((static_cast<SpriteNew*>(sp)->getIndex()).x);
+            int index2 = ((static_cast<SpriteNew*>(sp)->getIndex()).y);
             Vec2 postion;
             std::string path;
             if(i==0){//向上飞
@@ -868,12 +974,15 @@ void GameLayer::alteredState(Sprite* &sp){
             
         }
         for(int i = 0; i<4;i++){  //向4个反向 发射 4个sp
-            auto spMove = SpriteMove::createWithTexture(Director::getInstance()->getTextureCache()->getTextureForKey(m_ttqpath[0]));
+            auto spMove = SpriteMove::createWithTexture(Director::getInstance()->getTextureCache()->getTextureForKey("ttq/ykt_chq2.png"));
             spMove->setTag(1);
+            auto child =Sprite::createWithTexture(Director::getInstance()->getTextureCache()->getTextureForKey("ttq/ykt_chq2_tw.png"));
+            child->setName("tail");
+            spMove->addChild(child);
             //spMove->set
             this->addChild(spMove);
             spMove->setPosition(sp->getPosition());
-            spMove->setScale(1/4.0f);
+           // spMove->setScale(1/4.0f);
             Vec2 postion;
             if(i==0){//向上飞
                 spMove->setDirection('w');
@@ -892,15 +1001,20 @@ void GameLayer::alteredState(Sprite* &sp){
         this->deleteChild(sp);
     }else{  //tag 值小于 4  tag + 1
         sp->setTag(tag);
+        sp->runAction(Blink::create(0.5, 3));
         sp->setTexture(Director::getInstance()->getTextureCache()->getTextureForKey(m_ttqpath[tag]));
     }
 }
 void GameLayer::onExitTransitionDidStart(){
     Layer::onExitTransitionDidStart();
+    AnimationCache::destroyInstance();
+    cocostudio::ArmatureDataManager::destroyInstance();
+    Director::getInstance()->getTextureCache()->removeAllTextures();
+    Director::getInstance()->getEventDispatcher()->removeEventListener(this->m_listen);//销毁 监听事件
 }
 void GameLayer::onExit(){
     Layer::onExit();
-    Director::getInstance()->getEventDispatcher()->removeEventListener(this->m_listen);//销毁 监听事件
+   
 }
 void GameLayer::cleanup(){
     Layer::cleanup();

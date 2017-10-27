@@ -17,20 +17,34 @@ void SpriteMove::onEnter(){
 void SpriteMove::moveAction(std::function<void()> func){
     float duration =0.0f;
     Vec2 postion;
-    if(this->getDirection()=='w'){
+    auto child = this->getChildByName("tail");
+    if(this->getDirection()=='w'){  //上飞
         duration = 13.0f-this->getPositionY()/80.0f;
-        postion = Vec2(this->getPositionX(),13.0f*80.0f+this->m_visibleOrigin.y);
+        postion = Vec2(this->getPositionX(),12.0f*80.0f+this->m_visibleOrigin.y-this->getBoundingBox().size.height*0.5);
+        child->setPosition(Vec2(this->getBoundingBox().size.width*0.5,-this->getBoundingBox().size.height*0.5));
     }else if(this->getDirection()=='s'){
+        child->setPosition(Vec2(this->getBoundingBox().size.width*0.5,1.5f*this->getBoundingBox().size.height));
+        child->setRotation(180);
         duration = this->getPositionY()/80.0f-2.0f;
-        postion = Vec2(this->getPositionX(),2.0f*80.0f+this->m_visibleOrigin.y);
+        postion = Vec2(this->getPositionX(),3.0f*80.0f+this->m_visibleOrigin.y+this->getBoundingBox().size.height*0.5);
     }else if(this->getDirection()=='a'){
+        child->setPosition(Vec2(1.5f*this->getBoundingBox().size.width,this->getBoundingBox().size.height*0.5));
+        child->setRotation(-90);
         duration = this->getPositionX()/80.0f+1.0f;
-        postion = Vec2(-80.0f+this->m_visibleOrigin.x,this->getPositionY());
+        postion = Vec2(0.0f+this->m_visibleOrigin.x+this->getBoundingBox().size.width*0.5,this->getPositionY());
     }else if(this->getDirection()=='d'){
         duration =10.0f -this->getPositionX()/80.0f;
-        postion = Vec2(10.0f*80.0f+this->m_visibleOrigin.x,this->getPositionY());
+        postion = Vec2(9.0f*80.0f+this->m_visibleOrigin.x-this->getBoundingBox().size.width*0.5,this->getPositionY());
+        child->setPosition(Vec2(-this->getBoundingBox().size.width*0.5,this->getBoundingBox().size.height*0.5));
+        child->setRotation(90);
     }
-    this->runAction(Sequence::create(MoveTo::create(duration*0.3,postion),DelayTime::create(0.2f),CallFunc::create([=](){
+    this->runAction(Sequence::create(MoveTo::create(duration*0.15,postion),DelayTime::create(0.2f),CallFunc::create([=](){
+        //撞碎了的动画
+        auto node = Sprite::create();
+        this->getParent()->addChild(node);
+        node->setPosition(this->getPosition());
+        node->runAction(Sequence::create(Animate::create(AnimationCache::getInstance()->getAnimation("ttqbroken")),RemoveSelf::create(),NULL));
+        
         if(func){
             func();
         }
